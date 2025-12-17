@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Кем ты станешь через 5 лет?</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: #101318;
+        color: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      .game-root {
+        width: 100%;
+        max-width: 800px;
+        padding: 16px;
+      }
+
+      .game-card {
+        background: #181c24;
+        border-radius: 16px;
+        padding: 24px 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      .game-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        text-align: center;
+      }
+
+      .game-subtitle {
+        font-size: 0.95rem;
+        opacity: 0.8;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      /* КАРТИНКА ДЛЯ КАЖДОГО СЛАЙДА */
+      .screen-image {
+        width: 100%;
+        max-height: 400px;
+        object-fit: cover;
+        border-radius: 12px;
+        margin-bottom: 18px;
+        display: none; /* по умолчанию скрыта */
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
+
+      .game-body {
+        margin-bottom: 20px;
+        line-height: 1.5;
+        white-space: pre-line; /* чтобы \n работали как перенос */
+        font-size: 1rem;
+      }
+
+      .game-question {
+        font-weight: 600;
+        margin-bottom: 16px;
+        font-size: 1.05rem;
+      }
+
+      .options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .option-btn {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: none;
+        background: #2a3140;
+        color: #f5f5f5;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.95rem;
+        transition: background 0.15s, transform 0.1s;
+      }
+
+      .option-btn:hover {
+        background: #384155;
+        transform: translateY(-1px);
+      }
+
+      .option-btn:active {
+        transform: translateY(0);
+        background: #222735;
+      }
+
+      .game-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .game-step {
+        font-size: 0.8rem;
+        opacity: 0.6;
+      }
+
+      .restart-btn {
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid #3b82f6;
+        background: transparent;
+        color: #e5e7eb;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .restart-btn:hover {
+        background: #3b82f6;
+        color: #0b1120;
+      }
+
+      @media (max-width: 600px) {
+        .game-card {
+          padding: 18px 14px;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .game-title {
+          font-size: 1.4rem;
+        }
+        .game-body {
+          font-size: 0.95rem;
+        }
+        .option-btn {
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-root">
+      <div class="game-card">
+        <div class="game-title" id="game-title"></div>
+        <div class="game-subtitle" id="game-subtitle"></div>
+
+        <!-- ОБЩАЯ КАРТИНКА ДЛЯ ВСЕХ СЛАЙДОВ -->
+        <img class="screen-image" id="screen-image" src="" alt="" />
+
+        <div class="game-body" id="screen-text"></div>
+        <div class="game-question" id="screen-question"></div>
+
+        <div class="options" id="options"></div>
+
+        <div class="game-footer">
+          <div class="game-step" id="game-step"></div>
+          <button class="restart-btn" id="restart-btn" style="display: none">
+            Пройти ещё раз
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ----------------------------------------
+      //  ДАННЫЕ ИГРЫ
+      // ----------------------------------------
+      const gameData = {
+        title: "Кем ты станешь через 5 лет?",
+        subtitle: "Интерактивный выбор пути мигранта",
+        introScreenId: "intro",
+        // порядок экранов нужен только чтобы считать шаги для игрока
+        playOrder: ["intro", "q1", "q2", "q3", "q4", "q5", "q6"],
+        screens: [
+          {
+            id: "intro",
+            type: "screen",
+            image: "img/intro.jpg", // ← фотка для интро
+            text:
+              "Ты – Азиз, 27 лет.\n" +
+              "Ты живёшь в селе. Жена Айгуль беременна.\n" +
+              "У вас долг – 80 000 сом. Работы мало, денег мало,\n" +
+              "звонки из микрокредитной компании – каждый день.\n\n" +
+              "Сегодня твои решения определят, кем ты станешь через несколько лет.",
+            question: "",
+            options: [
+              {
+                label: "Начать историю",
+                next: "q1",
+                tag: null,
+                nextType: "screen",
+              },
+            ],
+          },
+          {
+            id: "q1",
+            type: "screen",
+            image: "img/q1.jpg", // ← фотка для q1
+            text:
+              "Утро.\n" +
+              "Телефон орёт: микрокредитная компания требует 15 000 сом уже сегодня.\n" +
+              "На столе – 3 000 сом.\n\n" +
+              "В телефоне:\n" +
+              "• Фото от Толкуна из России: «50 000₽ в неделю, братан!»\n" +
+              "• СМС от дяди: «Есть работа на стройке, приезжай»\n" +
+              "• Контакт «болгара» Эргаша\n" +
+              "• Лента с фото Жибек из московского ресторана.",
+            question: "Кому ты звонишь первым?",
+            options: [
+              {
+                label: "Позвонить Толкуну в Россию",
+                next: "q2",
+                tag: "alone",
+                nextType: "screen",
+              },
+              {
+                label: "Позвонить дяде – спросить про работу",
+                next: "q2",
+                tag: "stay",
+                nextType: "screen",
+              },
+              {
+                label: "Позвонить Эргашу",
+                next: "q2",
+                tag: "ergash",
+                nextType: "screen",
+              },
+              {
+                label: "Никому не звонить, просто листать ленту",
+                next: "q2",
+                tag: null,
+                nextType: "screen",
+              },
+            ],
+          },
+          {
+            id: "q2",
+            type: "screen",
+            image: "img/q2.jpg", // ← фотка для q2
+            text:
+              "Айгуль замечает, что ты напряжён.\n" +
+              "Она спрашивает:\n" +
+              "«Азиз, что с тобой? Ты молчаливый стал. О чём ты думаешь?»",
+            question: "Что ты ей отвечаешь?",
+            options: [
+              {
+                label: "«Я не такой, как Толкун. Я не пропаду»",
+                next: "q3",
+                tag: "stay",
+                nextType: "screen",
+              },
+              {
+                label: "«Нам нужны деньги. Ты сама видишь»",
+                next: "q3",
+                tag: "alone",
+                nextType: "screen",
+              },
+              {
+                label: "«Я хочу хоть раз что-то увидеть в жизни»",
+                next: "q3",
+                tag: "alone",
+                nextType: "screen",
+              },
+              {
+                label: "Промолчать и перевести тему",
+                next: "q3",
+                tag: null,
+                nextType: "screen",
+              },
+            ],
+          },
+          {
+            id: "q3",
+            type: "screen",
+            image: "img/q3.jpg", // ← фотка для q3
+            text:
+              "Пятница. Ты идёшь в мечеть.\n" +
+              "Имам говорит о миграции и вере.\n" +
+              "После молитвы мужчины обсуждают, как там и как здесь.",
+            question: "Чьи слова ты принимаешь ближе к сердцу?",
+            options: [
+              {
+                label: "Молодых: «В России свобода и большие деньги»",
+                next: "q4",
+                tag: "alone",
+                nextType: "screen",
+              },
+              {
+                label: "Вернувшихся: «Тяжело, но можно заработать»",
+                next: "q4",
+                tag: "alone",
+                nextType: "screen",
+              },
+              {
+                label: "Старших: «И тут можно жить, не надо рваться»",
+                next: "q4",
+                tag: "stay",
+                nextType: "screen",
+              },
+              {
+                label: "Никого не слушать, просто уйти домой",
+                next: "q4",
+                tag: null,
+                nextType: "screen",
+              },
+            ],
+          },
+          {
+            id: "q4",
+            type: "screen",
+            image: "img/q4.jpg", // ← фотка для q4
+            text:
+              "Ты приходишь к Эргашу.\n" +
+              "Новый дом, дорогая машина, во дворе всегда кто-то есть.\n" +
+              "Ты рассказываешь про долг и отсутствие работы.\n" +
+              "Эргаш слушает и говорит: «Есть несколько вариантов. Выбирай сам».",
+            question: "Что ты у него просишь?",
+            options: [
+              {
+                label: "«Дай мне деньги на долг. Я потом отработаю»",
+                next: "q5",
+                tag: "ergash",
+                nextType: "screen",
+              },
+              {
+                label: "«Помоги уехать в Москву, устроиться на работу»",
+                next: "q5",
+                tag: "alone",
+                nextType: "screen",
+              },
+              {
+                label: "«Спасибо, но я сам попробую решить»",
+                next: "q5",
+                tag: "stay",
+                nextType: "screen",
+              },
+              {
+                label: "«Мне нужно время подумать»",
+                next: "q5",
+                tag: "ergash",
+                nextType: "screen",
+              },
+            ],
+          },
+          {
+            id: "q5",
+            type: "screen",
+            image: "img/q5.jpg", // ← фотка для q5
+            text:
+              "Вечером ты заходишь к тёте Замире.\n" +
+              "Она 8 лет работала в России няней, жила у чужих людей, часто плакала от одиночества,\n" +
+              "но вернулась с деньгами и открыла маленький магазин.\n" +
+              "«Лучшие годы жизни я провела там, – говорит она. – Тяжело, но я стала другой».",
+            question: "Как ты для себя понимаешь её историю?",
+            options: [
+              {
+                label: "«Иногда ради будущего семьи нужно уехать»",
+                next: "q6",
+                tag: "alone",
+                nextType: "screen",
+              },
+              {
+                label: "«Я не хочу, чтобы Айгуль проходила через такое»",
+                next: "q6",
+                tag: "stay",
+                nextType: "screen",
+              },
+              {
+                label: "«Если ехать вместе, будет не так одиноко»",
+                next: "q6",
+                tag: "together",
+                nextType: "screen",
+              },
+              {
+                label: "«Главное – итог: дом и деньги. Остальное неважно»",
+                next: "q6",
+                tag: "ergash",
+                nextType: "screen",
+              },
+            ],
+          },
+          {
+            id: "q6",
+            type: "screen",
+            image: "img/q6.jpg", // ← фотка для q6
+            text:
+              "Ночью Айгуль не спит, гладит живот.\n" +
+              "Она включает голосовое от подруги Жибек из Москвы.\n" +
+              "Та говорит о новой жизни, свободе и о том, что родители против, но она остаётся там.\n\n" +
+              "После голосового Айгуль тихо спрашивает:\n" +
+              "«Азиз… А что, если мы поедем вместе? После родов. Поработаем, накопим и вернёмся?»",
+            question: "Что ты отвечаешь?",
+            options: [
+              {
+                label: "«Ты с ума сошла? Женщина с ребёнком в Россию?»",
+                next: null,
+                tag: "stay",
+                nextType: "endingAuto",
+              },
+              {
+                label: "«Твои родители меня убьют, если мы так сделаем»",
+                next: null,
+                tag: "stay",
+                nextType: "endingAuto",
+              },
+              {
+                label: "«Давай серьёзно подумаем об этом»",
+                next: null,
+                tag: "together",
+                nextType: "endingAuto",
+              },
+              {
+                label: "«Ты серьёзно? Это может сработать»",
+                next: null,
+                tag: "together",
+                nextType: "endingAuto",
+              },
+            ],
+          },
+        ],
+        endings: {
+          stay: {
+            title: "Финал: Остаться",
+            image: "img/ending_stay.jpg", // ← фотка для финала "остаться"
+            text:
+              "Ты остаёшься в селе.\n" +
+              "Работаешь то у дяди, то на подработках, понемногу отдаёшь долг.\n" +
+              "Айгуль рядом, ребёнок растёт, вы часто бываете у родни.\n\n" +
+              "Иногда по вечерам ты листаешь старые фотографии Толкуна из Москвы\n" +
+              "и думаешь, что, может быть, упустил шанс увидеть другой мир.\n" +
+              "Но каждый день ты возвращаешься домой, где тебя ждут по-настоящему.",
+          },
+          alone: {
+            title: "Финал: Уехать одному",
+            image: "img/ending_alone.jpg", // ← фотка для финала "уехать одному"
+            text:
+              "Ты решаешь уехать один.\n" +
+              "В России ты быстро понимаешь, что сказки про «лёгкие деньги» были сказками.\n" +
+              "Общежитие, стройка, смены, усталость, чужая страна.\n\n" +
+              "Дома долг закрывают твоими переводами, дом постепенно налаживается,\n" +
+              "но сына ты впервые держишь на руках только через несколько лет.\n" +
+              "Вы созваниваетесь по видео, но это не заменяет настоящих объятий.\n\n" +
+              "Когда ты возвращаешься, вы все уже другие.",
+          },
+          ergash: {
+            title: "Финал: Через Эргаша",
+            image: "img/ending_ergash.jpg", // ← фотка для финала "через Эргаша"
+            text:
+              "Ты принимаешь помощь Эргаша.\n" +
+              "Долг исчезает быстро, в селе о тебе говорят с уважением и осторожностью.\n" +
+              "Но каждое «я помогу» от Эргаша превращается в новый крючок.\n\n" +
+              "Ты зарабатываешь больше, чем многие односельчане, в доме появляются дорогие вещи,\n" +
+              "но ты всё реже можешь сказать, что этот путь – твой выбор.\n\n" +
+              "Иногда ночью ты думаешь: если бы тогда я отказался, всё было бы сложнее…\n" +
+              "но, может быть, легче смотреть в глаза самому себе.",
+          },
+          together: {
+            title: "Финал: Уехать вместе",
+            image: "img/ending_together.jpg", // ← фотка для финала "уехать вместе"
+            text:
+              "Вы решаете уехать вместе.\n" +
+              "Родители в шоке, село не одобряет, многие крутят пальцем у виска.\n" +
+              "Но вы собираете документы, вещи и всё-таки уезжаете.\n\n" +
+              "Первые годы тяжёлые: чужой язык, ребёнок, работа, съёмные комнаты.\n" +
+              "Иногда вы ссоритесь от усталости, иногда смеётесь до слёз от мелочей.\n\n" +
+              "Через несколько лет вы возвращаетесь: с опытом, сбережениями\n" +
+              "и другим взглядом на себя и на мир.\n" +
+              "Село всё ещё обсуждает ваши решения,\n" +
+              "но теперь вам важнее то, что вы прошли этот путь вместе.",
+          },
+        },
+      };
+
+      // ----------------------------------------
+      //  ЛОГИКА ИГРЫ
+      // ----------------------------------------
+      const titleEl = document.getElementById("game-title");
+      const subtitleEl = document.getElementById("game-subtitle");
+      const imageEl = document.getElementById("screen-image");
+      const textEl = document.getElementById("screen-text");
+      const questionEl = document.getElementById("screen-question");
+      const optionsEl = document.getElementById("options");
+      const stepEl = document.getElementById("game-step");
+      const restartBtn = document.getElementById("restart-btn");
+
+      let scores;
+      let currentScreenId;
+
+      function resetGame() {
+        scores = { stay: 0, ergash: 0, alone: 0, together: 0 };
+        currentScreenId = gameData.introScreenId;
+        restartBtn.style.display = "none";
+        renderScreen(currentScreenId);
+      }
+
+      function getScreenById(id) {
+        return gameData.screens.find((s) => s.id === id);
+      }
+
+      function getStepNumber(id) {
+        const idx = gameData.playOrder.indexOf(id);
+        if (idx === -1) return "";
+        // intro не считаем за вопрос
+        if (id === "intro") return "";
+        const questionIndex = idx; // т.к. intro первый
+        return `Шаг ${questionIndex} из ${gameData.playOrder.length - 1}`;
+      }
+
+      function renderScreen(id) {
+        const screen = getScreenById(id);
+        if (!screen) return;
+
+        titleEl.textContent = gameData.title;
+        subtitleEl.textContent = gameData.subtitle;
+
+        // КАРТИНКА ДЛЯ ЭТОГО ЭКРАНА
+        if (screen.image) {
+          imageEl.src = screen.image;
+          imageEl.alt = "";
+          imageEl.style.display = "block";
+        } else {
+          imageEl.style.display = "none";
+        }
+
+        textEl.textContent = screen.text || "";
+        questionEl.textContent = screen.question || "";
+        optionsEl.innerHTML = "";
+
+        stepEl.textContent = getStepNumber(id);
+
+        (screen.options || []).forEach((option) => {
+          const btn = document.createElement("button");
+          btn.className = "option-btn";
+          btn.textContent = option.label;
+          btn.onclick = () => handleOptionClick(option);
+          optionsEl.appendChild(btn);
+        });
+      }
+
+      function handleOptionClick(option) {
+        // Запоминаем выбор по пути (если есть)
+        if (option.tag && scores.hasOwnProperty(option.tag)) {
+          scores[option.tag] += 1;
+        }
+
+        if (option.nextType === "screen" && option.next) {
+          currentScreenId = option.next;
+          renderScreen(currentScreenId);
+        } else if (option.nextType === "endingAuto") {
+          showEndingAuto();
+        } else if (option.nextType === "endingDirect" && option.next) {
+          showEnding(option.next);
+        } else {
+          // по умолчанию – тоже автофинал
+          showEndingAuto();
+        }
+      }
+
+      function showEndingAuto() {
+        // Находим путь с максимальным score
+        const entries = Object.entries(scores);
+        entries.sort((a, b) => b[1] - a[1]);
+        const best = entries[0]; // ["stay", 3] и т.п.
+        const bestKey = best ? best[0] : "stay";
+        showEnding(bestKey);
+      }
+
+      function showEnding(key) {
+        const ending = gameData.endings[key];
+
+        titleEl.textContent = ending ? ending.title : "Финал истории";
+        subtitleEl.textContent = "";
+
+        // КАРТИНКА ДЛЯ ФИНАЛА
+        if (ending && ending.image) {
+          imageEl.src = ending.image;
+          imageEl.alt = "";
+          imageEl.style.display = "block";
+        } else {
+          imageEl.style.display = "none";
+        }
+
+        textEl.textContent = ending ? ending.text : "История подошла к концу.";
+        questionEl.textContent = "";
+        optionsEl.innerHTML = "";
+
+        stepEl.textContent = "Конец истории";
+        restartBtn.style.display = "inline-flex";
+      }
+
+      restartBtn.addEventListener("click", resetGame);
+
+      // автосброс через 3 минуты бездействия (полезно для музея)
+      let inactivityTimer;
+      function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+          resetGame();
+        }, 3 * 60 * 1000); // 3 минуты
+      }
+      document.addEventListener("click", resetInactivityTimer);
+      document.addEventListener("keydown", resetInactivityTimer);
+
+      // старт
+      resetGame();
+    </script>
+  </body>
+</html>
